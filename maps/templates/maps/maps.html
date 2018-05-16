@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Search</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="http://maps.google.com/maps/api/js?sensor=false"
+            type="text/javascript"></script>
+
+    <style>
+    .gm-style-iw {
+        width: 400px;
+        min-height: 50px;
+    }
+
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-default">
+    <div class="container-fluid">
+        <ul class="nav navbar-nav">
+            <li><a href="{% url 'maps' %}">Maps</a></li>
+            <li><a href="{% url 'search' %}">Search</a></li>
+        </ul>
+    </div>
+</nav>
+
+<div class="container">
+    <a class="btn btn-info" href="{% url 'home' %}">Refresh data</a>
+    <div class="jumbotron text-center">
+        <h1>Maps:</h1>
+    </div>
+
+
+    <div id="buttons">
+        <form method="get">
+            <label for='country'>Date start: </label>
+            <input type="date" value="15.05.2018" name="dateStart" id="dateStart">
+
+            <label for='country'>Date end: </label>
+            <input type="date" value="15.05.2018" name="dateEnd" id="dateEnd"><br/><br/>
+
+            <label for='country'>Country: </label>
+            <input type="text" name="country" id="country" class='chk-btn'>
+
+            <label for='location'>Location: </label>
+            <input type="text" name="location" id="location" class='chk-btn'>
+
+            <label for='town'>Town: </label>
+            <input type="text" name="town" id="town" class='chk-btn'>
+            <button type="submit" class="btn btn-danger">Filter</button>
+        </form>
+        <br>
+    </div>
+
+    <div id="map" style="width: 100%; height: 400px;"></div>
+    <br/>
+</div>
+<script type="text/javascript">
+    var today = new Date();
+    var dd = today.getDate();
+    var mm = today.getMonth()+1; //January is 0!
+    var yyyy = today.getFullYear();
+
+    if(dd<10) {
+        dd = '0'+dd
+    }
+
+    if(mm<10) {
+        mm = '0'+mm
+    }
+
+    today = yyyy + '-' + mm + '-' + dd;
+    document.getElementById("dateStart").defaultValue = today;
+    document.getElementById("dateEnd").defaultValue = today;
+
+    var locations = [
+        {% for point in map_points %}
+        {% if point.location != '' %}
+        ['{{point.location}}', {{point.lat}}, {{point.lon}}, {{point.id}}],
+        {% endif %}
+        {% endfor %}
+    ];
+
+    var map = new google.maps.Map(document.getElementById('map'), {
+      zoom: 3,
+      center: new google.maps.LatLng(15.47467, 45.322755),
+      mapTypeId: google.maps.MapTypeId.ROADMAP
+    });
+
+    var infowindow = new google.maps.InfoWindow({
+        maxWidth: 500
+    });
+
+    var marker, i;
+
+    {% for point in map_points %}
+      {% if point.location != '' and point.lat != '' and point.lon != '' %}
+    marker = new google.maps.Marker({
+        map: map,
+        position: new google.maps.LatLng({{point.lat}}, {{point.lon}})
+    });
+
+      google.maps.event.addListener(marker, 'click', (function(marker, i) {
+        return function() {
+          infowindow.setContent('{{point.location}}');
+          infowindow.open(map, marker);
+        }
+      })(marker, i));
+
+      google.maps.event.addListener(marker, 'mouseover', (function(marker, i) {
+        return function() {
+          infowindow.setContent("<div><p>{{point.date}}</p><p>Location:</p> <p>{{point.location}}</p><p>Town: {{point.town}}</p><p>Deaths: {{point.deaths}}</p></div>");
+          infowindow.open(map, marker);
+        }
+      })(marker, i));
+      {% endif %}
+    {% endfor %}
+</script>
+</body>
+
